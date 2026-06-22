@@ -31,6 +31,17 @@ app.use(
 );
 app.use(express.json());
 
+// Ensure DB connection is active before routes are processed (crucial for Serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("Database connection middleware error:", err);
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/bookings", bookingRoutes);
