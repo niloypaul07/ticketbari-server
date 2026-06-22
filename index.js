@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./lib/db');
@@ -54,11 +54,20 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => console.log(`ðŸš€ Server running on port ${PORT}`));
-  })
-  .catch((err) => {
-    console.error('âŒ Failed to connect to MongoDB:', err);
-    process.exit(1);
-  });
+// For local development
+if (process.env.VERCEL !== '1') {
+  connectDB()
+    .then(() => {
+      app.listen(PORT, () => console.log(`ðŸš€ Server running on port ${PORT}`));
+    })
+    .catch((err) => {
+      console.error('â Œ Failed to connect to MongoDB:', err);
+      process.exit(1);
+    });
+} else {
+  // Pre-connect DB for serverless (warm start)
+  connectDB().catch(console.error);
+}
+
+// Export for Vercel serverless
+module.exports = app;
