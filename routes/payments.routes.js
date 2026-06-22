@@ -1,6 +1,14 @@
 const express = require('express');
 const { ObjectId } = require('mongodb');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Stripe = require('stripe');
+let _stripe;
+const getStripe = () => {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is not set');
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  }
+  return _stripe;
+};
 const { getDB } = require('../lib/db');
 const verifyToken = require('../middleware/verifyToken');
 
@@ -76,6 +84,7 @@ router.post('/create-checkout-session', verifyToken, async (req, res) => {
       });
     }
 
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -113,6 +122,7 @@ router.get('/verify-session', verifyToken, async (req, res) => {
     const { session_id: sessionId } = req.query;
     if (!sessionId) return res.status(400).json({ error: 'session_id is required' });
 
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== 'paid') {
